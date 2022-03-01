@@ -1,5 +1,5 @@
 library(tidyverse)
-ds_salary <- read_csv("{Local do arquivo}")
+ds_salary <- read_csv("data_cleaned_2021.csv")
 
 #transformando strings "na" em NAs
 num_faltantes <-c()
