@@ -5,16 +5,25 @@ ds_salary <- read_csv("data_cleaned_2021.csv")
 
 
 #transformando strings "na" em NAs
-num_faltantes <-c()
-prop_faltantes <- c()
+verifica_faltantes <- function(dataset){
+  num_faltantes <-c()
+  prop_faltantes <- c()
+  for (i in 1:ncol(dataset)){
+    num_nas =  sum(is.na(dataset[,i]))
+    num_faltantes <- append(num_faltantes,num_nas)
+    prop_faltantes <- append(prop_faltantes,num_nas*100/nrow(dataset))
+    print(paste0("A coluna ",names(dataset[,i]), " possui ",num_nas," dados faltantes"))
+  }
+  faltantes <- tibble(colunas = names(dataset),num_faltantes = num_faltantes, prop_faltantes = prop_faltantes)
+  
+}
+
+
 for(i in 1:ncol(ds_salary)){
   ds_salary[(ds_salary[,i]=="na" | ds_salary[,i]==-1),i] <- NA
-  num_nas =  sum(is.na(ds_salary[,i]))
-  num_faltantes <- append(num_faltantes,num_nas)
-  print(paste0("A coluna ",names(ds_salary[,i]), " possui ",num_nas," dados faltantes"))
-  prop_faltantes <- append(prop_faltantes,num_nas*100/nrow(ds_salary))
+
 }
-faltantes <- tibble(colunas = names(ds_salary),num_faltantes = num_faltantes, prop_faltantes = prop_faltantes)
+faltantes <- verifica_faltantes(ds_salary)
 
 
 # Imputação de valores contínuos e inteiros
@@ -29,5 +38,4 @@ ds_salary$Competitors <- NULL
 ds_salary <- kNN(ds_salary)
 ds_salary <- subset(ds_salary, select = -c(42:82))
 
-qnt_valores_faltantes(ds_salary)
 
