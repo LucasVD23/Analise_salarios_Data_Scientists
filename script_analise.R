@@ -23,19 +23,26 @@ for(i in 1:ncol(ds_salary)){
   ds_salary[(ds_salary[,i]=="na" | ds_salary[,i]==-1),i] <- NA
 
 }
+
 faltantes <- verifica_faltantes(ds_salary)
 
 
-# Imputação de valores contínuos e inteiros
-ds_salary$Rating[is.nan(ds_salary$Rating)] <- mean(ds_salary$Rating, na.rm = TRUE)
-ds_salary$Founded[is.nan(ds_salary$Founded)] <- median(ds_salary$Founded, na.rm = TRUE)
-ds_salary$Age[is.nan(ds_salary$Age)] <- as.integer(mean(ds_salary$Age, na.rm = TRUE))
+# Imputacao de valores contínuos e inteiros
+data$Rating[is.nan(data$Rating)] <- mean(data$Rating, na.rm = TRUE)
+data$Founded[is.nan(data$Founded)] <- median(data$Founded, na.rm = TRUE)
+data$Age[is.nan(data$Age)] <- as.integer(mean(data$Age, na.rm = TRUE))
 
-# Remoção do atributo 'Competitors'
-ds_salary$Competitors <- NULL
+# Remocao do atributo 'Competitors', 'seniority\_by\_title' e 'Degree' por serem superiores a 60%
+data$Competitors <- NULL
+data$seniority_by_title <- NULL
+data$Degree <- NULL
 
-# Imputação dos valores com o uso do kNN
-ds_salary <- kNN(ds_salary)
-ds_salary <- subset(ds_salary, select = -c(42:82))
+# Imputacao dos valores do tipo 'string' a partir do uso do kNN
+data <- kNN(data)
+
+## Removendo colunas extras inseridas pelo kNN
+select(data, -c(39:78))
+
+faltantes <- verifica_faltantes(data)
 
 

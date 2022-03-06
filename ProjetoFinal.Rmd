@@ -1,0 +1,106 @@
+---
+title: "Projeto Final de Processamento e Visualização de Dados"
+author: "Grupo: Felipe, Lucas e Rafael"
+date: "01/03/2022"
+output: html_document
+---
+
+## Importando Dados
+
+```{r Importando Dados e Bibliotecas}
+library(VIM)
+library(tidyverse)
+data <- read_csv("data_cleaned_2021.csv")
+```
+
+## Dados Faltantes
+
+A seguir, transformamos os valores faltantes em nosso *dataset* - no caso -1 e "na" - para a constante NA, de modo a facilitar suas localizações e quantidades pelo uso de funções já definidas em R.
+
+### Calculando Quantidade
+
+```{r Dados Faltantes}
+
+# Transformando strings "na" e inteiros -1 em NA.
+for(i in 1:ncol(data)){
+  data[(data[,i]=="na" | data[,i]==-1),i] <- NA
+
+}
+
+# Funcao que verifica a quantidade de dados faltantes por coluna, devolvendo as informacoes em um 'tibble'.
+verifica_faltantes <- function(data){
+  num_faltantes <-c()    # Numero de observacoes faltantes.
+  prop_faltantes <- c()  # Proporcao de dados faltantes.
+  for (i in 1:ncol(data)) {
+    num_nas =  sum(is.na(data[,i]))
+    num_faltantes <- append(num_faltantes,num_nas)
+    prop_faltantes <- append(prop_faltantes, num_nas * 100/nrow(data))
+    print(paste0("A coluna ",names(data[,i]), " possui ",num_nas," dados faltantes"))
+  }
+  faltantes <- tibble(colunas = names(data),num_faltantes = num_faltantes, prop_faltantes = prop_faltantes)
+  return(faltantes)
+  
+}
+
+# Chama a function para analise.
+faltantes <- verifica_faltantes(data)
+```
+
+### Visualizando Dados
+
+A seguir, será gerada uma imagem, buscando exibir esses dados de forma visual, melhorarndo a sensaçao da quantidade de atributos faltantes.
+
+```{r Plotando Dados Faltantes}
+toBinaryMatrix <- function(df) {
+  m <- c()
+  for(i in colnames(df)){
+    x <- sum(is.na(data[,i]))
+    # missing value count
+    m <- append(m,x)
+    # non-missing value count
+    m <- append(m,nrow(df)-x)
+  }
+  # adding column and row names to matrix
+  a<-matrix(m,nrow=2)
+  rownames(a)<-c("TRUE","FALSE")
+  colnames(a)<-colnames(df)
+  
+  return(a)
+}
+
+binData <- toBinaryMatrix(data)
+
+barplot(binData,
+        main = "Valores faltantes no conjunto de dados",xlab = "Atributos",
+        col = c("#0060E5","#14CE75"))
+
+# legend for barplot
+legend("topright",
+       c("Valores totais","Valores faltantes"),
+       fill = c("#0060E5","#14CE75"))
+```
+
+### Imputando valores faltantes para aqueles > 5%
+
+A seguir, conforme descrito na especificação do trabalho, *para os atributos que possuam uma porcentagem maior que 5% de valores faltantes, deve ser proposta uma forma de tratá-los"*. Com isso, conforme explicitado no artigo em desenvolvimento, temos 3 tipos de atributos para aplicar 3 tipos de imputação.
+
+```{r Imputação Constante}
+
+# Imputacao de valores contínuos e inteiros
+data$Rating[is.nan(data$Rating)] <- mean(data$Rating, na.rm = TRUE)
+data$Founded[is.nan(data$Founded)] <- median(data$Founded, na.rm = TRUE)
+data$Age[is.nan(data$Age)] <- as.integer(mean(data$Age, na.rm = TRUE))
+
+# Remocao do atributo 'Competitors', 'seniority\_by\_title' e 'Degree' por serem superiores a 60%
+data$Competitors <- NULL
+data$seniority_by_title <- NULL
+data$Degree <- NULL
+
+# Imputacao dos valores do tipo 'string' a partir do uso do kNN
+data <- kNN(data)
+
+## Removendo colunas extras inseridas pelo kNN
+select(data, -c(39:78))
+
+faltantes <- verifica_faltantes(data)
+```
