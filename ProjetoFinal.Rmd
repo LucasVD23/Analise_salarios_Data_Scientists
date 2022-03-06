@@ -9,6 +9,7 @@ output: html_document
 
 ```{r Importando Dados e Bibliotecas}
 library(VIM)
+library(outliers)
 library(tidyverse)
 data <- read_csv("data_cleaned_2021.csv")
 ```
@@ -35,7 +36,7 @@ verifica_faltantes <- function(data){
     num_nas =  sum(is.na(data[,i]))
     num_faltantes <- append(num_faltantes,num_nas)
     prop_faltantes <- append(prop_faltantes, num_nas * 100/nrow(data))
-    print(paste0("A coluna ",names(data[,i]), " possui ",num_nas," dados faltantes"))
+    print(paste0("A coluna ",colnames(data[i]), " possui ",num_nas," dados faltantes"))
   }
   faltantes <- tibble(colunas = names(data),num_faltantes = num_faltantes, prop_faltantes = prop_faltantes)
   return(faltantes)
@@ -100,7 +101,29 @@ data$Degree <- NULL
 data <- kNN(data)
 
 ## Removendo colunas extras inseridas pelo kNN
-select(data, -c(39:78))
+data <- select(data, -c(39:78))
 
 faltantes <- verifica_faltantes(data)
+```
+
+## Ruidos e Outliers
+
+A secção a seguir destina-se a realizar os testes com a finalidade de descobrir a presença de outliers e dados ruidosos.
+
+```{r Ruidos e Outliers}
+
+outliers_com_grubbs <- function(column) {
+  test <- grubbs.test(column, opposite = FALSE)
+  print(test)
+  test <- grubbs.test(column, opposite = TRUE)
+  print(test)
+}
+
+for(i in 1:ncol(data)){
+  if ((typeof(data[1,i]) != "character") & (typeof(data[1,i]) != "logical")) {
+    print(paste0("Testando outliers em ", colnames(data[i]), "."))
+    outliers_com_grubbs(data[,i])
+  }
+}
+
 ```
