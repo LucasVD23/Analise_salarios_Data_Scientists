@@ -1,10 +1,11 @@
 library(VIM)
 library(tidyverse)
 
-ds_salary <- read_csv("data_cleaned_2021.csv")
+data <- read_csv("data_cleaned_2021.csv")
 
 
-#transformando strings "na" em NAs
+
+
 verifica_faltantes <- function(dataset){
   num_faltantes <-c()
   prop_faltantes <- c()
@@ -18,13 +19,15 @@ verifica_faltantes <- function(dataset){
   
 }
 
-
-for(i in 1:ncol(ds_salary)){
-  ds_salary[(ds_salary[,i]=="na" | ds_salary[,i]==-1),i] <- NA
-
+#transformando strings "na" em NAs
+for(i in 1:ncol(data)){
+  data[(data[,i]=="na" | data[,i]==-1),i] <- NA
+  
 }
 
-faltantes <- verifica_faltantes(ds_salary)
+
+
+faltantes <- verifica_faltantes(data)
 
 
 # Imputacao de valores contínuos e inteiros
@@ -46,3 +49,5 @@ select(data, -c(39:78))
 faltantes <- verifica_faltantes(data)
 
 
+##Retira coluna de estimativa de salários (ordinal) pois os intervalos da estimativa já estão em outro atributo
+data <- select(data,-'Salary Estimate')
