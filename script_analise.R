@@ -34,7 +34,7 @@ faltantes <- verifica_faltantes(data)
 data$Rating[is.nan(data$Rating)] <- mean(data$Rating, na.rm = TRUE)
 data$Founded[is.nan(data$Founded)] <- median(data$Founded, na.rm = TRUE)
 data$Age[is.nan(data$Age)] <- as.integer(mean(data$Age, na.rm = TRUE))
-
+ 
 # Remocao do atributo 'Competitors', 'seniority\_by\_title' e 'Degree' por serem superiores a 60%
 data$Competitors <- NULL
 data$seniority_by_title <- NULL
