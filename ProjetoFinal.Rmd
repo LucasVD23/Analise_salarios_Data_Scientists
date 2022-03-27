@@ -11,6 +11,11 @@ output: html_document
 library(VIM)
 library(outliers)
 library(tidyverse)
+
+library(devtools)
+install_github("vqv/ggbiplot")
+library(ggbiplot)
+
 data <- read_csv("data_cleaned_2021.csv")
 ```
 
@@ -126,4 +131,26 @@ for(i in 1:ncol(data)){
   }
 }
 
+```
+
+### Redução de dados
+
+Para a redução dos dados, será utilizado o algoritmo PCA sobre o subconjunto de dados referente as tecnologias das vagas.
+
+Pela análise dos resultados obtidos do PCA, em especial pela variância, é possível observar que esse subconjunto de dados possa ser razoavelmente bem representado a partir de 8 componentes principais gerados pelo PCA, permitindo uma representatividade de ~74%.A plotagem desses dados seria possível em um plano de 8 dimensões, algo visivelmente difícil de se compreender. Em contrapartida, o uso de 3 componentes permite um plano tridimensional, mas é capaz de representar apenas ~43% do total de dados.
+
+Dessa forma, é evidente que a utilização do PCA para visualização de dados nesse caso não é muito
+
+```{r Reducao de dados}
+requirements <- select(data, Python, spark, aws, excel, sql, sas, keras, pytorch, scikit, tensor, hadoop, tableau, bi, flink, mongo, google_an)
+
+requirements_pca <- prcomp(requirements, center = TRUE, scale. = TRUE)
+
+as.data.frame(requirements_pca$x)
+
+summary(requirements_pca)
+```
+
+```{r Imagem de 3 componentes}
+ggbiplot(requirements_pca)
 ```
