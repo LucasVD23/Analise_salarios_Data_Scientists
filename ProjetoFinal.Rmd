@@ -10,6 +10,7 @@ output: html_document
 ```{r Importando Dados e Bibliotecas}
 library(VIM)
 library(outliers)
+library(EnvStats)
 library(tidyverse)
 
 library(devtools)
@@ -17,6 +18,7 @@ install_github("vqv/ggbiplot")
 library(ggbiplot)
 
 data <- read_csv("data_cleaned_2021.csv")
+set.seed(10)
 ```
 
 ## Dados Faltantes
@@ -117,17 +119,52 @@ A secção a seguir destina-se a realizar os testes com a finalidade de descobri
 
 ```{r Ruidos e Outliers}
 
+eh_binario <- apply(data, 2, function(x) {all(x %in% 0:1)})
+nomes_colunas <- colnames(data)
+
 outliers_com_grubbs <- function(column) {
-  test <- grubbs.test(column, opposite = FALSE)
-  print(test)
-  test <- grubbs.test(column, opposite = TRUE)
-  print(test)
+  print(paste0("-----Aplicando o Teste de Grubbs-----"))
+  grubbs <- grubbs.test(column, opposite = FALSE)
+  print(grubbs)
+  grubbs <- grubbs.test(column, opposite = TRUE)
+  print(grubbs)
 }
 
-for(i in 1:ncol(data)){
-  if ((typeof(data[1,i]) != "character") & (typeof(data[1,i]) != "logical")) {
+outliers_com_dixon <- function(column) {
+  sub_data <- sample(column, size = 30, replace = FALSE)
+  print(paste0("-----Aplicando o Teste de Dixon-----"))
+  dixon <- dixon.test(sub_data, opposite = FALSE)
+  print(dixon)
+  dixon <- dixon.test(sub_data, opposite = TRUE)
+  print(dixon)
+}
+
+outliers_com_rosner <- function(column) {
+  print(paste0("-----Aplicando o Teste de Rosner-----"))
+  rosner <- rosnerTest(column, k = 6)
+  print(rosner$all.stats)
+}
+
+outliers_com_Hampel <- function(column, colName) {
+  cat("\n")
+  print(paste0("-----Aplicando o Filtro de Hampel-----"))
+  limite_min = median(column) - 3 * mad(column)
+  limite_max = median(column) + 3 * mad(column)
+  
+  df_Filtro_de_Hampel <- data %>% filter(column < limite_min | column > limite_max) %>% select(index, colName)
+  print(df_Filtro_de_Hampel)
+}
+
+for(i in 2:ncol(data)){
+  if ((typeof(data[1,i]) != "character") & !eh_binario[nomes_colunas[i]]) {
+    print(paste0("************************************"))
     print(paste0("Testando outliers em ", colnames(data[i]), "."))
+    print(paste0("************************************"))
     outliers_com_grubbs(data[,i])
+    outliers_com_dixon(data[,i])
+    outliers_com_rosner(data[,i])
+    outliers_com_Hampel(data[,i], nomes_colunas[i])
+    cat("\n\n")
   }
 }
 
