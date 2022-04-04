@@ -39,6 +39,25 @@ calcular_corrs_numericos <- function(dataset_numeric,na.rm=TRUE){
 
 }
 
+calcula_corrs_nominais <- function(dataset_nominal,na.rm=TRUE){
+  redundantes <- c()
+  for(i in 1:ncol(dataset_nominal)){
+    for(j in 1:ncol(dataset_nominal)){
+      if(i==j||i<j){
+        next
+      }
+      corr = chisq.test(data_nominal[,i],data_nominal[,j])
+      if(corr$p.value <= 0.05){
+        print(paste(names(data_nominal[i])," e ", names(data_nominal[j]),"são correlacionados"))
+        append(redundantes,names(data_nominal[j]))
+        redundantes <- union(redundantes, names(data_nominal[j]))
+      }
+    }
+    
+  }
+  return(redundantes)
+}
+
 
 
 verifica_faltantes <- function(dataset){
@@ -92,4 +111,6 @@ data_numeric <- data %>% select_if(is.numeric)
 redundantes <- calcular_corrs_numericos(data_numeric)
 print(paste0("são redundantes e podem ser removidos: ",toString(redundantes)))
 
-data_nomimal <- data %>% select_if(is.character)
+data_nominal <- data %>% select_if(is.character)
+
+calcula_corrs_nominais(data_nominal)
