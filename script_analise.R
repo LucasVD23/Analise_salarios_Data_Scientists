@@ -46,7 +46,7 @@ calcula_corrs_nominais <- function(dataset_nominal,na.rm=TRUE){
       if(i==j||i<j){
         next
       }
-      corr = chisq.test(data_nominal[,i],data_nominal[,j])
+      corr = chisq.test(data_nominal[,i],data_nominal[,j],simulate.p.value = TRUE)
       if(corr$p.value <= 0.05){
         print(paste(names(data_nominal[i])," e ", names(data_nominal[j]),"são correlacionados"))
         append(redundantes,names(data_nominal[j]))
@@ -79,7 +79,12 @@ for(i in 1:ncol(data)){
   
 }
 
+levels_size <- levels(factor(data$Size))
+data$Size <- factor(data$Size, levels = c(levels_size[1],levels_size[7],levels_size[4],
+                                          levels_size[6],levels_size[3],levels_size[5],
+                                          levels_size[2],levels_size[8]))
 
+data$Size <- as.numeric(data$Size)
 
 faltantes <- verifica_faltantes(data)
 
@@ -108,9 +113,14 @@ data <- select(data,-'Salary Estimate')
 
 data_numeric <- data %>% select_if(is.numeric)
 
+
 redundantes <- calcular_corrs_numericos(data_numeric)
 print(paste0("são redundantes e podem ser removidos: ",toString(redundantes)))
 
 data_nominal <- data %>% select_if(is.character)
 
-calcula_corrs_nominais(data_nominal)
+#calcula_corrs_nominais(data_nominal)
+
+levels_Revenue <- levels(factor(data$Revenue))
+#data$Revenue <- factor(data$Size, levels = c(levels_Revenue[12],levels_Revenue[2],levels_Revenue[9],levels_Revenue[3],levels_Revenue[7],levels_Revenue[10],levels_Revenue[5],levels_Revenue[11],levels_Revenue[1],levels_Revenue[6],levels_Revenue[8],levels_Revenue[4],levels_Revenue[13]))
+
