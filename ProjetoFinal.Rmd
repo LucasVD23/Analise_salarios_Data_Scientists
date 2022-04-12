@@ -119,10 +119,10 @@ A secção a seguir destina-se a realizar os testes com a finalidade de descobri
 
 ```{r Ruidos e Outliers}
 
-eh_binario <- apply(data, 2, function(x) {all(x %in% 0:1)})
-nomes_colunas <- colnames(data)
+
 
 outliers_com_grubbs <- function(column) {
+  # Aplicando o Teste de Grubbs
   print(paste0("-----Aplicando o Teste de Grubbs-----"))
   grubbs <- grubbs.test(column, opposite = FALSE)
   print(grubbs)
@@ -131,7 +131,13 @@ outliers_com_grubbs <- function(column) {
 }
 
 outliers_com_dixon <- function(column) {
+  # selecionando uma amostra aleatoria sem substituicao
   sub_data <- sample(column, size = 30, replace = FALSE)
+  
+  # ordenando amostra
+  sub_data <- sort(sub_data)
+  
+  # Aplicando o Teste de Dixon
   print(paste0("-----Aplicando o Teste de Dixon-----"))
   dixon <- dixon.test(sub_data, opposite = FALSE)
   print(dixon)
@@ -140,6 +146,7 @@ outliers_com_dixon <- function(column) {
 }
 
 outliers_com_rosner <- function(column) {
+  # Aplicando o Teste de Rosner
   print(paste0("-----Aplicando o Teste de Rosner-----"))
   rosner <- rosnerTest(column, k = 6)
   print(rosner$all.stats)
@@ -147,14 +154,20 @@ outliers_com_rosner <- function(column) {
 
 outliers_com_Hampel <- function(column, colName) {
   cat("\n")
+  # Aplicando o metodo Filtro de Hampel
   print(paste0("-----Aplicando o Filtro de Hampel-----"))
-  limite_min = median(column) - 3 * mad(column)
-  limite_max = median(column) + 3 * mad(column)
+  limite_minimo = median(column) - 3 * mad(column)
+  limite_maximo = median(column) + 3 * mad(column)
   
-  df_Filtro_de_Hampel <- data %>% filter(column < limite_min | column > limite_max) %>% select(index, colName)
-  print(df_Filtro_de_Hampel)
+  hampel <- data %>% filter(column < limite_minimo | column > limite_maximo) %>% select(index, colName)
+  print(hampel)
 }
 
+# Verificando quais atributos sao binarios
+eh_binario <- apply(data, 2, function(x) {all(x %in% 0:1)})
+nomes_colunas <- colnames(data)
+
+# Execução dos testes
 for(i in 2:ncol(data)){
   if ((typeof(data[1,i]) != "character") & !eh_binario[nomes_colunas[i]]) {
     print(paste0("************************************"))
