@@ -80,12 +80,19 @@ for(i in 1:ncol(data)){
 }
 
 levels_size <- levels(factor(data$Size))
+#ordena e retira unkown
 data$Size <- factor(data$Size, levels = c(levels_size[1],levels_size[7],levels_size[4],
                                           levels_size[6],levels_size[3],levels_size[5],
-                                          levels_size[2],levels_size[8]))
+                                          levels_size[2]))
 
-data$Size <- as.numeric(data$Size)
 
+data$Size <- as.numeric(data$Size,na.rm=FALSE)
+#ordena e retira unkown
+levels_Revenue <- levels(factor(data$Revenue))
+data$Revenue <- factor(data$Revenue, levels = c(levels_Revenue[12],levels_Revenue[2],levels_Revenue[9],levels_Revenue[3],
+                                                levels_Revenue[7], levels_Revenue[10],levels_Revenue[5],levels_Revenue[11],
+                                                levels_Revenue[1],levels_Revenue[6],levels_Revenue[8],levels_Revenue[4]))
+data$Revenue <- as.numeric(data$Revenue,na.rm=FALSE)
 faltantes <- verifica_faltantes(data)
 
 
@@ -121,6 +128,5 @@ data_nominal <- data %>% select_if(is.character)
 
 #calcula_corrs_nominais(data_nominal)
 
-levels_Revenue <- levels(factor(data$Revenue))
-#data$Revenue <- factor(data$Size, levels = c(levels_Revenue[12],levels_Revenue[2],levels_Revenue[9],levels_Revenue[3],levels_Revenue[7],levels_Revenue[10],levels_Revenue[5],levels_Revenue[11],levels_Revenue[1],levels_Revenue[6],levels_Revenue[8],levels_Revenue[4],levels_Revenue[13]))
+
 
