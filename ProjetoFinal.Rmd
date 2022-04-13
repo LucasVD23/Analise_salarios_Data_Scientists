@@ -5,14 +5,13 @@ date: "01/03/2022"
 output: html_document
 ---
 
-## Importando Dados
+## Importando Dados & Bibliotecas
 
 ```{r Importando Dados e Bibliotecas}
 library(VIM)
 library(outliers)
 library(EnvStats)
 library(tidyverse)
-
 library(devtools)
 install_github("vqv/ggbiplot")
 library(ggbiplot)
@@ -23,9 +22,9 @@ set.seed(10)
 
 ## Dados Faltantes
 
-A seguir, transformamos os valores faltantes em nosso *dataset* - no caso -1 e "na" - para a constante NA, de modo a facilitar suas localizações e quantidades pelo uso de funções já definidas em R.
+A seguir, transformamos os valores faltantes em nosso *dataset*, representado pelos valores -1 e "na" para a constante NA, de modo a facilitar suas localizações no conjunto de dados e suas quantidades pelo uso de funções pré-definidas em R.
 
-### Calculando Quantidade
+### Calculando Quantidade de Dados Faltantes
 
 ```{r Dados Faltantes}
 
@@ -35,50 +34,47 @@ for(i in 1:ncol(data)){
 
 }
 
-# Funcao que verifica a quantidade de dados faltantes por coluna, devolvendo as informacoes em um 'tibble'.
-verifica_faltantes <- function(data){
-  num_faltantes <-c()    # Numero de observacoes faltantes.
-  prop_faltantes <- c()  # Proporcao de dados faltantes.
+# Funcao que verifica a quantidade de dados faltantes por coluna, retornando as
+#  informacoes em um 'tibble'.
+verifica_faltantes <- function(data) {
+  num_faltantes <- c()    # Número de observações faltantes.
+  prop_faltantes <- c()   # Proporção de dados faltantes.
   for (i in 1:ncol(data)) {
     num_nas =  sum(is.na(data[,i]))
-    num_faltantes <- append(num_faltantes,num_nas)
+    num_faltantes <- append(num_faltantes, num_nas)
     prop_faltantes <- append(prop_faltantes, num_nas * 100/nrow(data))
-    print(paste0("A coluna ",colnames(data[i]), " possui ",num_nas," dados faltantes"))
   }
-  faltantes <- tibble(colunas = names(data),num_faltantes = num_faltantes, prop_faltantes = prop_faltantes)
+  faltantes <- tibble(colunas = names(data), num_faltantes = num_faltantes, prop_faltantes = prop_faltantes)
   return(faltantes)
   
 }
 
-# Chama a function para analise.
+# Chama a function para análise.
 faltantes <- verifica_faltantes(data)
+faltantes
 ```
 
-### Visualizando Dados
+Logo, segundo o *tibble* gerado acima, as observações nesse conjunto representam os atributos, com esses indicando fatores como quantidade de dados faltantes, além de sua proporção comparado ao *dataset* total.
 
-A seguir, será gerada uma imagem, buscando exibir esses dados de forma visual, melhorarndo a sensaçao da quantidade de atributos faltantes.
+Com o objetivo de facilitar essa análise, a seguir é gerada uma imagem que busca contemplar visualmente as relaçõoes de atributos faltantes com o total de atributos do *dataset*, permitindo melhores abordagens de imputação.
 
 ```{r Plotando Dados Faltantes}
-toBinaryMatrix <- function(df) {
-  m <- c()
-  for(i in colnames(df)){
-    x <- sum(is.na(data[,i]))
-    # missing value count
-    m <- append(m,x)
-    # non-missing value count
-    m <- append(m,nrow(df)-x)
-  }
-  # adding column and row names to matrix
-  a<-matrix(m,nrow=2)
-  rownames(a)<-c("TRUE","FALSE")
-  colnames(a)<-colnames(df)
-  
-  return(a)
+# Preparing data to plot using `barplot`
+totalAndMissingValuesPerCol <- c()
+for (i in 1:nrow(faltantes)) {
+  # Faltantes
+  totalAndMissingValuesPerCol <- append(totalAndMissingValuesPerCol,
+                                        faltantes[i, 2])
+  # Não Faltantes
+  totalAndMissingValuesPerCol <- append(totalAndMissingValuesPerCol,
+                                        (nrow(data) - faltantes[i, 2]))
 }
+totalAndMissingValuesPerCol <- matrix(totalAndMissingValuesPerCol,
+                                      nrow = 2, ncol=ncol(data))
+rownames(totalAndMissingValuesPerCol) <- c("TOTAL", "MISSING")
+colnames(totalAndMissingValuesPerCol) <- colnames(data)
 
-binData <- toBinaryMatrix(data)
-
-barplot(binData,
+barplot(totalAndMissingValuesPerCol,
         main = "Valores faltantes no conjunto de dados",xlab = "Atributos",
         col = c("#0060E5","#14CE75"))
 
@@ -113,7 +109,7 @@ data <- select(data, -c(39:78))
 faltantes <- verifica_faltantes(data)
 ```
 
-## Ruidos e Outliers
+## Ruídos e Outliers
 
 A secção a seguir destina-se a realizar os testes com a finalidade de descobrir a presença de outliers e dados ruidosos.
 
