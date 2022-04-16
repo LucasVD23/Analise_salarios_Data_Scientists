@@ -20,11 +20,113 @@ data <- read_csv("data_cleaned_2021.csv")
 set.seed(10)
 ```
 
+
+## Transformando dados
+
+```{r Atributos irrelevantes}
+# Transformação do atributo 'Size'
+#  - Ordenação manual e remoção do valor 'unknown'
+levels_size <- levels(factor(data$Size))
+data$Size <- as.numeric(factor(data$Size, levels = c(levels_size[1],
+                                          levels_size[7],
+                                          levels_size[4],
+                                          levels_size[6],
+                                          levels_size[3],
+                                          levels_size[5],
+                                          levels_size[2])))
+
+# Transformação do atributo 'Revenue'
+#  - Ordenação manual e remoção do valor 'unknown'
+levels_Revenue <- levels(factor(data$Revenue))
+data$Revenue <- as.numeric(factor(data$Revenue, levels = c(levels_Revenue[12],
+                                                levels_Revenue[2],
+                                                levels_Revenue[9],
+                                                levels_Revenue[3],
+                                                levels_Revenue[7], 
+                                                levels_Revenue[10],
+                                                levels_Revenue[5],
+                                                levels_Revenue[11],
+                                                levels_Revenue[1],
+                                                levels_Revenue[6],
+                                                levels_Revenue[8],
+                                                levels_Revenue[4])))
+```
+
+## Verificação de possíveis atributos redundantes
+
+```{r Verificacao de redundancia}
+calcular_covariancia <- function(vec1, vec2) {
+  covariancia <- 0
+  for (i in 1:length(vec1)) {
+    dif_a = vec1[i] - mean(vec1, na.rm=TRUE) 
+    dif_b = vec2[i] - mean(vec2, na.rm=TRUE)
+    covariancia <- covariancia + dif_a*dif_b
+  }
+  covariancia <- covariancia/(length(vec1))
+}
+
+calcular_corrs_numericos <- function(dataset_numeric, na.rm=TRUE){
+  redundantes <- c()
+  for(i in 1:ncol(dataset_numeric)){
+    for(j in 1:ncol(dataset_numeric)){
+      if( i==j || i<j ){
+        next
+      }
+      vec1 <- as.vector(dataset_numeric[,i])
+      vec2 <- as.vector(dataset_numeric[,j])
+      r <- calcular_covariancia(vec1,vec2)/(sd(vec1)*sd(vec2))
+      soma_quadrados <- sum((vec1 - mean(vec2)) ^ 2)
+      soma_quadrados_residuais <- sum((vec1 - vec2)^2)
+      r_2 <- 1 - (soma_quadrados_residuais/soma_quadrados)
+      print(paste0("R: ", r, " R2:", r_2))
+      if(((r > 0.7) || (r < -0.7)) || (r_2 > 0.7)) {
+        print(paste(names(data_numeric[i]),
+                    " e ", 
+                    names(data_numeric[j]),
+                    "são correlacionados"))
+        append(redundantes, names(data_numeric[j]))
+        redundantes <- union(redundantes, names(data_numeric[j]))
+        print(paste(r,", ",r_2))
+      }
+    }
+    
+  }
+  return(redundantes)
+
+}
+
+calcula_corrs_nominais <- function(dataset_nominal, na.rm=TRUE){
+  redundantes <- c()
+  for(i in 1:ncol(dataset_nominal)){
+    for(j in 1:ncol(dataset_nominal)){
+      if(i==j||i<j){
+        next
+      }
+      corr = chisq.test(data_nominal[,i], data_nominal[,j],
+                        simulate.p.value = TRUE)
+      if(corr$p.value <= 0.05){
+        print(paste(names(data_nominal[i]),
+                    " e ", 
+                    names(data_nominal[j]),
+                    "são correlacionados"))
+        append(redundantes, names(data_nominal[j]))
+        redundantes <- union(redundantes, names(data_nominal[j]))
+      }
+    }
+    
+  }
+  return(redundantes)
+}
+
+# Invoca as funções definidas acima.
+data_numeric <- data %>% select_if(is.numeric)
+redundantes <- calcular_corrs_numericos(data_numeric)
+print(paste("São redundantes e podem ser removidos: ", toString(redundantes)))
+```
+
 ## Dados Faltantes
 
-A seguir, transformamos os valores faltantes em nosso *dataset*, representado pelos valores -1 e "na" para a constante NA, de modo a facilitar suas localizações no conjunto de dados e suas quantidades pelo uso de funções pré-definidas em R.
-
-### Calculando Quantidade de Dados Faltantes
+### Quantidade de Dados Faltantes
 
 ```{r Dados Faltantes}
 
@@ -44,9 +146,9 @@ verifica_faltantes <- function(data) {
     num_faltantes <- append(num_faltantes, num_nas)
     prop_faltantes <- append(prop_faltantes, num_nas * 100/nrow(data))
   }
-  faltantes <- tibble(colunas = names(data), num_faltantes = num_faltantes, prop_faltantes = prop_faltantes)
+  faltantes <- tibble(colunas = names(data), num_faltantes = num_faltantes,
+                      prop_faltantes = prop_faltantes)
   return(faltantes)
-  
 }
 
 # Chama a function para análise.
@@ -54,12 +156,9 @@ faltantes <- verifica_faltantes(data)
 faltantes
 ```
 
-Logo, segundo o *tibble* gerado acima, as observações nesse conjunto representam os atributos, com esses indicando fatores como quantidade de dados faltantes, além de sua proporção comparado ao *dataset* total.
-
-Com o objetivo de facilitar essa análise, a seguir é gerada uma imagem que busca contemplar visualmente as relaçõoes de atributos faltantes com o total de atributos do *dataset*, permitindo melhores abordagens de imputação.
 
 ```{r Plotando Dados Faltantes}
-# Preparing data to plot using `barplot`
+# Preparando dados para realizar a plotagem.
 totalAndMissingValuesPerCol <- c()
 for (i in 1:nrow(faltantes)) {
   # Faltantes
@@ -74,6 +173,8 @@ totalAndMissingValuesPerCol <- matrix(totalAndMissingValuesPerCol,
 rownames(totalAndMissingValuesPerCol) <- c("TOTAL", "MISSING")
 colnames(totalAndMissingValuesPerCol) <- colnames(data)
 
+# Plot. O 'barplot' permite que mais de 2 colunas sejam adicionada impressas em
+#  apenas uma.
 barplot(totalAndMissingValuesPerCol,
         main = "Valores faltantes no conjunto de dados",xlab = "Atributos",
         col = c("#0060E5","#14CE75"))
@@ -84,10 +185,6 @@ legend("topright",
        fill = c("#0060E5","#14CE75"))
 ```
 
-### Imputando valores faltantes para aqueles > 5%
-
-A seguir, conforme descrito na especificação do trabalho, *para os atributos que possuam uma porcentagem maior que 5% de valores faltantes, deve ser proposta uma forma de tratá-los"*. Com isso, conforme explicitado no artigo em desenvolvimento, temos 3 tipos de atributos para aplicar 3 tipos de imputação.
-
 ```{r Imputação Constante}
 
 # Imputacao de valores contínuos e inteiros
@@ -95,7 +192,8 @@ data$Rating[is.nan(data$Rating)] <- mean(data$Rating, na.rm = TRUE)
 data$Founded[is.nan(data$Founded)] <- median(data$Founded, na.rm = TRUE)
 data$Age[is.nan(data$Age)] <- as.integer(mean(data$Age, na.rm = TRUE))
 
-# Remocao do atributo 'Competitors', 'seniority\_by\_title' e 'Degree' por serem superiores a 60%
+# Remocao do atributo 'Competitors', 'seniority\_by\_title' e 'Degree' por serem
+#  superiores a 60%
 data$Competitors <- NULL
 data$seniority_by_title <- NULL
 data$Degree <- NULL
@@ -109,17 +207,23 @@ data <- select(data, -c(39:78))
 faltantes <- verifica_faltantes(data)
 ```
 
-## Ruídos e Outliers
+## Amostragem e Técnicas de Imputação
 
-A secção a seguir destina-se a realizar os testes com a finalidade de descobrir a presença de outliers e dados ruidosos.
+```{r Amostragem Simples}
+## Quantidade de amostras a serem selecionadas (30%)
+qnt_amostra <- nrow(data) * 0.3
+
+## Capturando a amostragem aleatória simples sem substituição
+dataAmostragem <- sample_n(data, qnt_amostra, replace = FALSE)
+```
+
+## Ruídos e Outliers
 
 ```{r Ruidos e Outliers}
 
-
-
 outliers_com_grubbs <- function(column) {
   # Aplicando o Teste de Grubbs
-  print(paste0("-----Aplicando o Teste de Grubbs-----"))
+  print(paste("-----Aplicando o Teste de Grubbs-----"))
   grubbs <- grubbs.test(column, opposite = FALSE)
   print(grubbs)
   grubbs <- grubbs.test(column, opposite = TRUE)
@@ -134,7 +238,7 @@ outliers_com_dixon <- function(column) {
   sub_data <- sort(sub_data)
   
   # Aplicando o Teste de Dixon
-  print(paste0("-----Aplicando o Teste de Dixon-----"))
+  print(paste("-----Aplicando o Teste de Dixon-----"))
   dixon <- dixon.test(sub_data, opposite = FALSE)
   print(dixon)
   dixon <- dixon.test(sub_data, opposite = TRUE)
@@ -143,7 +247,7 @@ outliers_com_dixon <- function(column) {
 
 outliers_com_rosner <- function(column) {
   # Aplicando o Teste de Rosner
-  print(paste0("-----Aplicando o Teste de Rosner-----"))
+  print(paste("-----Aplicando o Teste de Rosner-----"))
   rosner <- rosnerTest(column, k = 6)
   print(rosner$all.stats)
 }
@@ -151,7 +255,7 @@ outliers_com_rosner <- function(column) {
 outliers_com_Hampel <- function(column, colName) {
   cat("\n")
   # Aplicando o metodo Filtro de Hampel
-  print(paste0("-----Aplicando o Filtro de Hampel-----"))
+  print(paste("-----Aplicando o Filtro de Hampel-----"))
   limite_minimo = median(column) - 3 * mad(column)
   limite_maximo = median(column) + 3 * mad(column)
   
@@ -166,9 +270,9 @@ nomes_colunas <- colnames(data)
 # Execução dos testes
 for(i in 2:ncol(data)){
   if ((typeof(data[1,i]) != "character") & !eh_binario[nomes_colunas[i]]) {
-    print(paste0("************************************"))
-    print(paste0("Testando outliers em ", colnames(data[i]), "."))
-    print(paste0("************************************"))
+    print(paste("************************************"))
+    print(paste("Testando outliers em ", colnames(data[i]), "."))
+    print(paste("************************************"))
     outliers_com_grubbs(data[,i])
     outliers_com_dixon(data[,i])
     outliers_com_rosner(data[,i])
@@ -179,13 +283,7 @@ for(i in 2:ncol(data)){
 
 ```
 
-### Redução de dados
-
-Para a redução dos dados, será utilizado o algoritmo PCA sobre o subconjunto de dados referente as tecnologias das vagas.
-
-Pela análise dos resultados obtidos do PCA, em especial pela variância, é possível observar que esse subconjunto de dados possa ser razoavelmente bem representado a partir de 8 componentes principais gerados pelo PCA, permitindo uma representatividade de ~74%.A plotagem desses dados seria possível em um plano de 8 dimensões, algo visivelmente difícil de se compreender. Em contrapartida, o uso de 3 componentes permite um plano tridimensional, mas é capaz de representar apenas ~43% do total de dados.
-
-Dessa forma, é evidente que a utilização do PCA para visualização de dados nesse caso não é muito
+## Redução de atributos
 
 ```{r Reducao de dados}
 requirements <- select(data, Python, spark, aws, excel, sql, sas, keras, pytorch, scikit, tensor, hadoop, tableau, bi, flink, mongo, google_an)
