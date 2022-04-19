@@ -107,7 +107,7 @@ data$seniority_by_title <- NULL
 data$Degree <- NULL
 
 # Imputacao dos valores do tipo 'string' a partir do uso do kNN
-data <- kNN(data)
+data <- kNN(data,imp_var = FALSE)
 
 ## Removendo colunas extras inseridas pelo kNN
 select(data, -c(39:78))
@@ -128,5 +128,12 @@ data_nominal <- data %>% select_if(is.character)
 
 #calcula_corrs_nominais(data_nominal)
 
-
-
+#reitando redundantes 
+data$`Lower Salary` <- NULL
+data$`Upper Salary`<- NULL
+data$Founded <- NULL
+data$`Job Description`<-NULL
+data$company_txt <-NULL
+data$`Job Location`<- NULL
+data$`Job Title`<-NULL
+data$Industry <- NULL
