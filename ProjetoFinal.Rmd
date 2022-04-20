@@ -19,8 +19,6 @@ library(ggbiplot)
 data <- read_csv("data_cleaned_2021.csv")
 set.seed(10)
 ```
-
-
 ## Transformando dados
 
 ```{r Atributos irrelevantes}
@@ -52,88 +50,13 @@ data$Revenue <- as.numeric(factor(data$Revenue, levels = c(levels_Revenue[12],
                                                 levels_Revenue[4])))
 ```
 
-## Verificação de possíveis atributos redundantes
-
-```{r Verificacao de redundancia}
-calcular_covariancia <- function(vec1, vec2) {
-  covariancia <- 0
-  for (i in 1:length(vec1)) {
-    dif_a = vec1[i] - mean(vec1, na.rm=TRUE) 
-    dif_b = vec2[i] - mean(vec2, na.rm=TRUE)
-    covariancia <- covariancia + dif_a*dif_b
-  }
-  covariancia <- covariancia/(length(vec1))
-}
-
-calcular_corrs_numericos <- function(dataset_numeric, na.rm=TRUE){
-  redundantes <- c()
-  for(i in 1:ncol(dataset_numeric)){
-    for(j in 1:ncol(dataset_numeric)){
-      if( i==j || i<j ){
-        next
-      }
-      vec1 <- as.vector(dataset_numeric[,i])
-      vec2 <- as.vector(dataset_numeric[,j])
-      r <- calcular_covariancia(vec1,vec2)/(sd(vec1)*sd(vec2))
-      soma_quadrados <- sum((vec1 - mean(vec2)) ^ 2)
-      soma_quadrados_residuais <- sum((vec1 - vec2)^2)
-      r_2 <- 1 - (soma_quadrados_residuais/soma_quadrados)
-      print(paste0("R: ", r, " R2:", r_2))
-      if(((r > 0.7) || (r < -0.7)) || (r_2 > 0.7)) {
-        print(paste(names(data_numeric[i]),
-                    " e ", 
-                    names(data_numeric[j]),
-                    "são correlacionados"))
-        append(redundantes, names(data_numeric[j]))
-        redundantes <- union(redundantes, names(data_numeric[j]))
-        print(paste(r,", ",r_2))
-      }
-    }
-    
-  }
-  return(redundantes)
-
-}
-
-calcula_corrs_nominais <- function(dataset_nominal, na.rm=TRUE){
-  redundantes <- c()
-  for(i in 1:ncol(dataset_nominal)){
-    for(j in 1:ncol(dataset_nominal)){
-      if(i==j||i<j){
-        next
-      }
-      corr = chisq.test(data_nominal[,i], data_nominal[,j],
-                        simulate.p.value = TRUE)
-      if(corr$p.value <= 0.05){
-        print(paste(names(data_nominal[i]),
-                    " e ", 
-                    names(data_nominal[j]),
-                    "são correlacionados"))
-        append(redundantes, names(data_nominal[j]))
-        redundantes <- union(redundantes, names(data_nominal[j]))
-      }
-    }
-    
-  }
-  return(redundantes)
-}
-
-# Invoca as funções definidas acima.
-data_numeric <- data %>% select_if(is.numeric)
-redundantes <- calcular_corrs_numericos(data_numeric)
-print(paste("São redundantes e podem ser removidos: ", toString(redundantes)))
-```
-
-## Dados Faltantes
-
 ### Quantidade de Dados Faltantes
 
 ```{r Dados Faltantes}
 
 # Transformando strings "na" e inteiros -1 em NA.
 for(i in 1:ncol(data)){
-  data[(data[,i]=="na" | data[,i]==-1),i] <- NA
-
+  data[((data[,i]=="na" | data[,i]==-1) & !is.na(data[,i])), i] <- NA
 }
 
 # Funcao que verifica a quantidade de dados faltantes por coluna, retornando as
@@ -206,6 +129,81 @@ data <- select(data, -c(39:78))
 
 faltantes <- verifica_faltantes(data)
 ```
+
+## Verificação de possíveis atributos redundantes
+
+```{r Verificacao de redundancia}
+calcular_covariancia <- function(vec1, vec2) {
+  covariancia <- 0
+  for (i in 1:length(vec1)) {
+    dif_a = vec1[i] - mean(vec1, na.rm=TRUE) 
+    dif_b = vec2[i] - mean(vec2, na.rm=TRUE)
+    covariancia <- covariancia + dif_a*dif_b
+  }
+  covariancia <- covariancia/(length(vec1))
+}
+
+calcular_corrs_numericos <- function(dataset_numeric, na.rm=TRUE){
+  redundantes <- c()
+  for(i in 1:ncol(dataset_numeric)){
+    for(j in 1:ncol(dataset_numeric)){
+      if( i==j || i<j ){
+        next
+      }
+      vec1 <- as.vector(dataset_numeric[,i])
+      vec2 <- as.vector(dataset_numeric[,j])
+      r <- calcular_covariancia(vec1,vec2)/(sd(vec1)*sd(vec2))
+      soma_quadrados <- sum((vec1 - mean(vec2)) ^ 2)
+      soma_quadrados_residuais <- sum((vec1 - vec2)^2)
+      r_2 <- 1 - (soma_quadrados_residuais/soma_quadrados)
+      print(paste0("R: ", r, " R2:", r_2))
+      if(((r > 0.7) || (r < -0.7)) || (r_2 > 0.7)) {
+        print(paste(names(data_numeric[i]),
+                    " e ", 
+                    names(data_numeric[j]),
+                    "são correlacionados"))
+        append(redundantes, names(data_numeric[j]))
+        redundantes <- union(redundantes, names(data_numeric[j]))
+        print(paste(r,", ",r_2))
+      }
+    }
+    
+  }
+  return(redundantes)
+
+}
+
+calcula_corrs_nominais <- function(dataset_nominal, na.rm=TRUE){
+  redundantes <- c()
+  for(i in 1:ncol(dataset_nominal)){
+    for(j in 1:ncol(dataset_nominal)){
+      if(i==j||i<j){
+        next
+      }
+      corr = chisq.test(data_nominal[,i], data_nominal[,j],
+                        simulate.p.value = TRUE)
+      if(corr$p.value <= 0.05){
+        print(paste(names(data_nominal[i]),
+                    " e ", 
+                    names(data_nominal[j]),
+                    "são correlacionados"))
+        append(redundantes, names(data_nominal[j]))
+        redundantes <- union(redundantes, names(data_nominal[j]))
+      }
+    }
+    
+  }
+  return(redundantes)
+}
+
+
+
+# Invoca as funções definidas acima.
+data_numeric <- data %>% select_if(is.numeric)
+redundantes <- calcular_corrs_numericos(data_numeric)
+print(paste("São redundantes e podem ser removidos: ", toString(redundantes)))
+```
+
 
 ## Amostragem e Técnicas de Imputação
 
