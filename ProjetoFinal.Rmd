@@ -9,6 +9,7 @@ output: html_document
 
 ```{r Importando Dados e Bibliotecas}
 library(VIM)
+library(mice)
 library(outliers)
 library(EnvStats)
 library(tidyverse)
@@ -211,8 +212,80 @@ print(paste("São redundantes e podem ser removidos: ", toString(redundantes)))
 ## Quantidade de amostras a serem selecionadas (30%)
 qnt_amostra <- nrow(data) * 0.3
 
-## Capturando a amostragem aleatória simples sem substituição
-dataAmostragem <- sample_n(data, qnt_amostra, replace = FALSE)
+## Amostragem aleatória simples sem substituição
+data_amostragem <- sample_n(data, qnt_amostra, replace = FALSE)
+
+## Adicionando valores faltantes.
+## ~ 4 valores
+positions <- sample(x = c(0:nrow(data_amostragem)), 
+                    size = 0.02 * nrow(data_amostragem))
+data_amostragem$`Avg Salary(K) Amostrado` <- data_amostragem$`Avg Salary(K)`
+```
+
+```{r Imputacao}
+## Avaliacao das imputacoes por R^2
+r_squared <- function(obs, pred) {
+  rss <- sum((pred - obs) ^ 2)
+  tss <- sum((obs - mean(obs)) ^ 2)
+  rs <- 1 - rss/tss
+  rs
+}
+
+mode <- function(column) {
+   value <- unique(column)
+   value[which.max(tabulate(match(column, value)))]
+}
+
+print(paste("R Quadrado: ",
+            r_squared(obs = data_amostragem$`Avg Salary(K)`,
+                      pred = data_amostragem$`Avg Salary(K)`)))
+
+
+## Subtituição por valor Médio
+data_amostragem$`Avg Salary(K) Amostrado`[positions] <- NA
+data_amostragem$`Avg Salary(K) Amostrado`[positions] <- mean(data_amostragem$`Avg Salary(K) Amostrado`, na.rm = TRUE)
+
+print(paste("R Quadrado Para Imputação Constante (Média): ",
+            r_squared(obs = data_amostragem$`Avg Salary(K)`,
+                      pred = data_amostragem$`Avg Salary(K) Amostrado`)))
+
+## Subtituição por valor Mediano
+data_amostragem$`Avg Salary(K) Amostrado`[positions] <- NA
+data_amostragem$`Avg Salary(K) Amostrado`[positions] <- median(data_amostragem$`Avg Salary(K) Amostrado`, na.rm = TRUE)
+
+print(paste("R Quadrado Para Imputação Constante (Mediana): ",
+            r_squared(obs = data_amostragem$`Avg Salary(K)`,
+                      pred = data_amostragem$`Avg Salary(K) Amostrado`)))
+
+## Subtituição por valor Moda
+data_amostragem$`Avg Salary(K) Amostrado`[positions] <- NA
+data_amostragem$`Avg Salary(K) Amostrado`[positions] <- mode(data_amostragem$`Avg Salary(K) Amostrado`)
+
+print(paste("R Quadrado Para Imputação Constante (Moda): ",
+            r_squared(obs = data_amostragem$`Avg Salary(K)`,
+                      pred = data_amostragem$`Avg Salary(K) Amostrado`)))
+
+## KNN
+data_amostragem$`Avg Salary(K) Amostrado`[positions] <- NA
+data_amostragem <- kNN(data_amostragem)
+data_amostragem <- select(data_amostragem, -c(40:78))
+
+print(paste("R Quadrado Para KNN: ",
+            r_squared(obs = data_amostragem$`Avg Salary(K)`,
+                      pred = data_amostragem$`Avg Salary(K) Amostrado`)))
+
+## Regressão Logística (valores contínuos)
+# colnames(data_amostragem) <- make.names(colnames(data_amostragem))
+# 
+# data_amostragem$`Avg Salary(K)Amostrado`[positions] <- NA
+# data_amostragem <- mice(
+#   data_amostragem, 
+#   method = 'logreg', 
+#   m = 1)
+# 
+# print(paste("R Quadrado Para Regressão Logística: ",
+#             r_squared(obs = data_amostragem$`AvgSalary(K)`,
+#                       pred = data_amostragem$`AvgSalary(K)Amostrado`)))
 ```
 
 ## Ruídos e Outliers
