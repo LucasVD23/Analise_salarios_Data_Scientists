@@ -3,7 +3,10 @@ library(tidyverse)
 
 data <- read_csv("data_cleaned_2021.csv")
 
-calcular_covariancia <- function(vec1,vec2){
+norm_min_max <- function(vec, na.rm = TRUE) {
+  return((vec- min(vec)) /(max(vec)-min(vec)))
+}
+calcular_covariancia <- function(vec1,vec2,na.rm=TRUE){
   covariancia <-0
   for(i in 1:length(vec1)){
     dif_a = vec1[i] - mean(vec1) 
@@ -137,3 +140,9 @@ data$company_txt <-NULL
 data$`Job Location`<- NULL
 data$`Job Title`<-NULL
 data$Industry <- NULL
+
+
+data_numeric <- data %>% select_if(is.numeric)
+data_numeric <- norm_min_max(data_numeric)
+
+calcular_corrs_numericos(data_numeric)
