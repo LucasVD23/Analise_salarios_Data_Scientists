@@ -359,6 +359,21 @@ for(i in 2:ncol(data)){
 
 ## Redução de atributos
 
+```{r Reducao de atributos numéricos}
+requirements <- select(data, Rating, Size, Founded, Revenue, Hourly, `Employer provided`,
+                       `Lower Salary`, `Upper Salary`, `Avg Salary(K)`, Age)
+
+requirements_pca <- prcomp(requirements, center = TRUE, scale. = TRUE)
+
+as.data.frame(requirements_pca$x)
+
+summary(requirements_pca)
+```
+
+```{r Imagem de 3 componentes}
+ggbiplot(requirements_pca)
+```
+
 ```{r Reducao de atributos booleanos}
 requirements <- select(data, Python, spark, aws, excel, sql, sas, keras, pytorch, scikit, tensor, hadoop, tableau, bi, flink, mongo, google_an)
 
