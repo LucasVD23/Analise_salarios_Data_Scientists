@@ -274,18 +274,21 @@ print(paste("R Quadrado Para KNN: ",
             r_squared(obs = data_amostragem$`Avg Salary(K)`,
                       pred = data_amostragem$`Avg Salary(K) Amostrado`)))
 
-## Regressão Logística (valores contínuos)
-# colnames(data_amostragem) <- make.names(colnames(data_amostragem))
-# 
-# data_amostragem$`Avg Salary(K)Amostrado`[positions] <- NA
-# data_amostragem <- mice(
-#   data_amostragem, 
-#   method = 'logreg', 
-#   m = 1)
-# 
-# print(paste("R Quadrado Para Regressão Logística: ",
-#             r_squared(obs = data_amostragem$`AvgSalary(K)`,
-#                       pred = data_amostragem$`AvgSalary(K)Amostrado`)))
+## Regressão Linear Bayesiana
+colnames(data_amostragem) <- make.names(colnames(data_amostragem))
+data_amostragem$`Avg.Salary.K..Amostrado`[positions] <- NA
+
+data_amostragem_mice <- mice(
+  data_amostragem,
+  method = 'norm',
+  m = 1,
+  remove_collinear = FALSE)
+
+data_amostragem <- as.data.frame(complete(data_amostragem_mice))
+
+print(paste("R Quadrado Para Regressão Linear Bayesiana: ",
+            r_squared(obs = data_amostragem$`Avg.Salary.K.`,
+                      pred = data_amostragem$`Avg.Salary.K..Amostrado`)))
 ```
 
 ## Ruídos e Outliers
@@ -356,7 +359,7 @@ for(i in 2:ncol(data)){
 
 ## Redução de atributos
 
-```{r Reducao de dados}
+```{r Reducao de atributos booleanos}
 requirements <- select(data, Python, spark, aws, excel, sql, sas, keras, pytorch, scikit, tensor, hadoop, tableau, bi, flink, mongo, google_an)
 
 requirements_pca <- prcomp(requirements, center = TRUE, scale. = TRUE)
