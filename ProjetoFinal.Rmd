@@ -387,3 +387,27 @@ summary(requirements_pca)
 ```{r Imagem de 3 componentes}
 ggbiplot(requirements_pca)
 ```
+
+## Visualização de dados
+
+### Visualização das **hard-skills** mais requisitadas
+
+```{r Visualizacao1}
+# Selecionando apenas as colunas necessárias para geração do gráfico.
+skills <- select(data, Python, spark, aws, excel, sql, sas, keras, pytorch, scikit, tensor, hadoop, tableau, bi, flink, mongo, google_an)
+
+# Criação de um novo dataframe
+sum_skills = data.frame()
+# Para cada ferramenta, contabiliza o total de ocorrências no conjunto.
+for (i in 1:ncol(skills)) {
+  sum_skills[i,1] = sum(skills[,i])
+}
+# Juntando ao data.frame os nomes das ferramentas e atribui nomes as colunas.
+sum_skills[,2] = colnames(skills)
+colnames(sum_skills) = c('Occur', 'Skills')
+
+# Por fim, realiza a plotagem do gráfico.
+grafico_skills <- ggplot(data = sum_skills) + 
+  geom_bar(stat = "identity", position = position_dodge(), mapping = aes(x = as.factor(Skills), as.factor(Occur)))
+grafico_skills
+```
