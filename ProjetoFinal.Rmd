@@ -23,6 +23,9 @@ set.seed(10)
 ## Transformando dados
 
 ```{r Atributos irrelevantes}
+# Removendo o atributo 'Salary Estimate'
+data$`Salary Estimate` <- NULL
+
 # Transformação do atributo 'Size'
 #  - Ordenação manual e remoção do valor 'unknown'
 levels_size <- levels(factor(data$Size))
@@ -49,6 +52,7 @@ data$Revenue <- as.numeric(factor(data$Revenue, levels = c(levels_Revenue[12],
                                                 levels_Revenue[6],
                                                 levels_Revenue[8],
                                                 levels_Revenue[4])))
+
 ```
 
 ### Quantidade de Dados Faltantes
@@ -126,7 +130,7 @@ data$Degree <- NULL
 data <- kNN(data)
 
 ## Removendo colunas extras inseridas pelo kNN
-data <- select(data, -c(39:78))
+data <- select(data, -c(39:76))
 
 faltantes <- verifica_faltantes(data)
 ```
@@ -203,6 +207,47 @@ calcula_corrs_nominais <- function(dataset_nominal, na.rm=TRUE){
 data_numeric <- data %>% select_if(is.numeric)
 redundantes <- calcular_corrs_numericos(data_numeric)
 print(paste("São redundantes e podem ser removidos: ", toString(redundantes)))
+
+#retirando redundantes 
+
+data$Founded <- NULL
+data$`Job Description`<-NULL
+
+data$company_txt <-NULL
+data$`Job Location`<- NULL
+data$`Job Title`<-NULL
+data$Industry <- NULL
+```
+## Normalização de Dados
+
+```{r Normalização de Dados}
+
+norm_min_max <- function(vec, na.rm = TRUE) {
+  return((vec- min(vec)) /(max(vec)-min(vec)))
+}
+
+norm_z_score <- function(vec, na.rm=TRUE){
+  for(i in 1:ncol(vec)){
+    vec[,i]<- ((vec[,i]-mean(vec[,i]))/sd(vec[,i]))
+  }
+  return(vec)
+}
+
+# Selecionando dois atributos numéricos do conjunto de dados
+atributos_nao_norm <- data.frame('Avg Salary(K)' = data$`Avg Salary(K)`,
+'Rating'= data$Rating)
+calcular_corrs_numericos(atributos_nao_norm)
+
+# Realizando normalizações
+atributos_norm_min_max <- norm_min_max(atributos_nao_norm)
+atributos_norm_z_score <- norm_z_score(atributos_nao_norm)
+
+
+# Resultados pós normalização
+print("Resultado das correlacoes com normalizacao min-max")
+calcular_corrs_numericos(atributos_norm_min_max)
+print("Resultado das correlacoes com normalizacao z-score")
+calcular_corrs_numericos(atributos_norm_z_score)
 ```
 
 
@@ -268,7 +313,7 @@ print(paste("R Quadrado Para Imputação Constante (Moda): ",
 ## KNN
 data_amostragem$`Avg Salary(K) Amostrado`[positions] <- NA
 data_amostragem <- kNN(data_amostragem)
-data_amostragem <- select(data_amostragem, -c(40:78))
+data_amostragem <- select(data_amostragem, -c(32:64))
 
 print(paste("R Quadrado Para KNN: ",
             r_squared(obs = data_amostragem$`Avg Salary(K)`,
@@ -360,22 +405,7 @@ for(i in 2:ncol(data)){
 ## Redução de atributos
 
 ```{r Reducao de atributos numéricos}
-requirements <- select(data, Rating, Size, Founded, Revenue, Hourly, `Employer provided`,
-                       `Lower Salary`, `Upper Salary`, `Avg Salary(K)`, Age)
-
-requirements_pca <- prcomp(requirements, center = TRUE, scale. = TRUE)
-
-as.data.frame(requirements_pca$x)
-
-summary(requirements_pca)
-```
-
-```{r Imagem de 3 componentes}
-ggbiplot(requirements_pca)
-```
-
-```{r Reducao de atributos booleanos}
-requirements <- select(data, Python, spark, aws, excel, sql, sas, keras, pytorch, scikit, tensor, hadoop, tableau, bi, flink, mongo, google_an)
+requirements <- select(data, Rating, `Avg Salary(K)`, Age, `Lower Salary`, `Upper Salary`)
 
 requirements_pca <- prcomp(requirements, center = TRUE, scale. = TRUE)
 
