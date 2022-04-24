@@ -351,10 +351,7 @@ outliers_com_grubbs <- function(column) {
 
 outliers_com_dixon <- function(column) {
   # selecionando uma amostra aleatoria sem substituicao
-  sub_data <- sample(column, size = 30, replace = FALSE)
-  
-  # ordenando amostra
-  sub_data <- sort(sub_data)
+  sub_data <- sample(column, size = 25, replace = FALSE)
   
   # Aplicando o Teste de Dixon
   print(paste("-----Aplicando o Teste de Dixon-----"))
@@ -378,24 +375,37 @@ outliers_com_Hampel <- function(column, colName) {
   limite_minimo = median(column) - 3 * mad(column)
   limite_maximo = median(column) + 3 * mad(column)
   
+  print(paste("Limite Mínimo: ", limite_minimo))
+  print(paste("Limite Máximo: ", limite_maximo))
+  
   hampel <- data %>% filter(column < limite_minimo | column > limite_maximo) %>% select(index, colName)
   print(hampel)
 }
 
+
+# Selecionando os atributo numéricos do dataset
+data_outliers <- select_if(data, is.numeric)
+
+# Retirando numéricos ordinais da análise de outliers
+data_outliers$Size <- NULL
+data_outliers$Revenue <- NULL
+
 # Verificando quais atributos sao binarios
-eh_binario <- apply(data, 2, function(x) {all(x %in% 0:1)})
-nomes_colunas <- colnames(data)
+eh_binario <- apply(data_outliers, 2, function(x) {all(x %in% 0:1)})
+nomes_colunas <- colnames(data_outliers)
+
 
 # Execução dos testes
-for(i in 2:ncol(data)){
-  if ((typeof(data[1,i]) != "character") & !eh_binario[nomes_colunas[i]]) {
+for(i in 2:ncol(data_outliers)){
+  if ((typeof(data_outliers[1,i]) != "character") & !eh_binario[nomes_colunas[i]]) {
     print(paste("************************************"))
-    print(paste("Testando outliers em ", colnames(data[i]), "."))
+    print(paste("Testando outliers em ", colnames(data_outliers[i]), "."))
     print(paste("************************************"))
-    outliers_com_grubbs(data[,i])
-    outliers_com_dixon(data[,i])
-    outliers_com_rosner(data[,i])
-    outliers_com_Hampel(data[,i], nomes_colunas[i])
+    
+    outliers_com_grubbs(data_outliers[,i])
+    outliers_com_dixon(data_outliers[,i])
+    outliers_com_rosner(data_outliers[,i])
+    outliers_com_Hampel(data_outliers[,i], nomes_colunas[i])
     cat("\n\n")
   }
 }
