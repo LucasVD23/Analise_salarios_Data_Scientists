@@ -1,11 +1,19 @@
 library(VIM)
 library(tidyverse)
-
+library(plotly)
 data <- read_csv("data_cleaned_2021.csv")
 
 norm_min_max <- function(vec, na.rm = TRUE) {
   return((vec- min(vec)) /(max(vec)-min(vec)))
 }
+
+norm_z_score <- function(vec, na.rm=TRUE){
+  for(i in 1:ncol(vec)){
+    vec[,i]<- ((vec[,i]-mean(vec[,i]))/sd(vec[,i]))
+  }
+  return(vec)
+}
+
 calcular_covariancia <- function(vec1,vec2,na.rm=TRUE){
   covariancia <-0
   for(i in 1:length(vec1)){
@@ -20,9 +28,10 @@ calcular_corrs_numericos <- function(dataset_numeric,na.rm=TRUE){
   redundantes <- c()
   for(i in 1:ncol(dataset_numeric)){
     for(j in 1:ncol(dataset_numeric)){
-      if(i==j||i<j){
+      if(i==j||i>j){
         next
       }
+
       vec1 <- dataset_numeric[,i]
       vec2 <- dataset_numeric[,j]
       r <- calcular_covariancia(vec1,vec2)/(sd(vec1)*sd(vec2))
@@ -33,8 +42,10 @@ calcular_corrs_numericos <- function(dataset_numeric,na.rm=TRUE){
         print(paste(names(data_numeric[i])," e ", names(data_numeric[j]),"são correlacionados"))
         append(redundantes,names(data_numeric[j]))
         redundantes <- union(redundantes, names(data_numeric[j]))
-        print(paste(r,", ",r_2))
+
       }
+      print(paste("r: ",r,", r²: ",r_2))
+      
     }
     
   }
@@ -61,7 +72,14 @@ calcula_corrs_nominais <- function(dataset_nominal,na.rm=TRUE){
   return(redundantes)
 }
 
+library(plotly)
 
+fig <- plot_ly(
+  type="treemap",
+  labels=c("Eve", "Cain", "Seth", "Enos", "Noam", "Abel", "Awan", "Enoch", "Azura"),
+  parents=c("", "Eve", "Eve", "Seth", "Seth", "Eve", "Eve", "Awan", "Eve")
+)
+fig
 
 verifica_faltantes <- function(dataset){
   num_faltantes <-c()
@@ -125,7 +143,8 @@ data_numeric <- data %>% select_if(is.numeric)
 
 
 redundantes <- calcular_corrs_numericos(data_numeric)
-print(paste0("são redundantes e podem ser removidos: ",toString(redundantes)))
+
+print(paste0("são redundantes: ",toString(redundantes)))
 
 data_nominal <- data %>% select_if(is.character)
 
@@ -143,6 +162,43 @@ data$Industry <- NULL
 
 
 data_numeric <- data %>% select_if(is.numeric)
-data_numeric <- norm_min_max(data_numeric)
+data_numeric_norm <- norm_min_max(data_numeric)
 
-calcular_corrs_numericos(data_numeric)
+calcular_corrs_numericos(data_numeric_norm)
+
+
+#normalizações nos atribtuos Age e avg Salary
+atributos_nao_norm <- data.frame('Avg Salary(K)' = data$`Avg Salary(K)`,'Rating'= data$Rating)
+calcular_corrs_numericos(atributos_nao_norm)
+
+atributos_norm_min_max <- norm_min_max(atributos_nao_norm)
+atributos_norm_z_score <- norm_z_score(atributos_nao_norm)
+
+print("Resultado das correlações com normalização min-max")
+calcular_corrs_numericos(atributos_norm_min_max)
+print("Resultado das correlações com normalização z-score")
+calcular_corrs_numericos(atributos_norm_z_score)
+
+
+
+totalAndMissingValuesPerCol <- c()
+for (i in 1:nrow(faltantes)) {
+  # Faltantes
+  totalAndMissingValuesPerCol <- append(totalAndMissingValuesPerCol,
+                                        faltantes[i, 2])
+  # Não Faltantes
+  totalAndMissingValuesPerCol <- append(totalAndMissingValuesPerCol,
+                                        (nrow(data) - faltantes[i, 2]))
+}
+
+library(plotly)
+
+labels=c("Type of Ownership", "Sector", "Company Name", "Rating","Size","Revenue","job_title_sim", "Avg Salary(K)","Location")
+parents=c("", "Type of Ownership", "Sector", "Company Name", "Company Name","Company Name","Company Name","job_title_sim","job_title_sim")
+
+fig <- plot_ly(
+  type="treemap",
+  labels=labels,
+  parents=parents
+)
+fig
