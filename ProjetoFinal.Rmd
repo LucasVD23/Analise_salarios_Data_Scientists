@@ -451,3 +451,20 @@ grafico_skills <- ggplot(data = sum_skills) +
   geom_bar(stat = "identity", position = position_dodge(), mapping = aes(x = as.factor(Skills), as.factor(Occur)))
 grafico_skills
 ```
+### Visualização do Rating Médio das empresas com base na sua receita obtida
+
+```{r Visualizacao2}
+# Selecionando apenas as colunas necessárias para geração do gráfico.
+visualizacao2 <- select(data, Rating, Revenue, `Type of ownership`)
+
+conjunto_de_analise <- visualizacao2 %>% dplyr::group_by(Revenue, `Type of ownership`) %>% dplyr::summarise("Rating Medio" = mean(Rating))
+
+grafico_rating_medio <- ggplot(data = conjunto_de_analise) +
+                        geom_bar(stat = "identity", position = position_dodge(), mapping = aes(x= as.factor(Revenue), y = `Rating Medio`, fill = `Type of ownership`)) +
+                        labs(x = "Receita das Empresas", title = "Rating Médio das empresas com base na sua receita Obtida")
+
+
+grafico_rating_medio
+
+                                 
+```
