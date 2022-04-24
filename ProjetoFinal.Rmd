@@ -16,10 +16,12 @@ library(tidyverse)
 library(devtools)
 install_github("vqv/ggbiplot")
 library(ggbiplot)
+library(plotly)
 
 data <- read_csv("data_cleaned_2021.csv")
 set.seed(10)
 ```
+
 ## Transformando dados
 
 ```{r Atributos irrelevantes}
@@ -104,8 +106,11 @@ colnames(totalAndMissingValuesPerCol) <- colnames(data)
 # Plot. O 'barplot' permite que mais de 2 colunas sejam adicionada impressas em
 #  apenas uma.
 barplot(totalAndMissingValuesPerCol,
-        main = "Valores faltantes no conjunto de dados",xlab = "Atributos",
-        col = c("#0060E5","#14CE75"))
+        main = "Valores faltantes no conjunto de dados",
+        xlab = "Atributos",
+        las = 2,
+        col = c("#0060E5","#14CE75"),
+        cex.names = 0.7)
 
 # legend for barplot
 legend("topright",
@@ -113,13 +118,7 @@ legend("topright",
        fill = c("#0060E5","#14CE75"))
 ```
 
-```{r Imputação Constante}
-
-# Imputacao de valores contínuos e inteiros
-data$Rating[is.nan(data$Rating)] <- mean(data$Rating, na.rm = TRUE)
-data$Founded[is.nan(data$Founded)] <- median(data$Founded, na.rm = TRUE)
-data$Age[is.nan(data$Age)] <- as.integer(mean(data$Age, na.rm = TRUE))
-
+```{r Imputação}
 # Remocao do atributo 'Competitors', 'seniority\_by\_title' e 'Degree' por serem
 #  superiores a 60%
 data$Competitors <- NULL
@@ -313,7 +312,7 @@ print(paste("R Quadrado Para Imputação Constante (Moda): ",
 ## KNN
 data_amostragem$`Avg Salary(K) Amostrado`[positions] <- NA
 data_amostragem <- kNN(data_amostragem)
-data_amostragem <- select(data_amostragem, -c(32:64))
+data_amostragem <- select(data_amostragem, -c(34:66))
 
 print(paste("R Quadrado Para KNN: ",
             r_squared(obs = data_amostragem$`Avg Salary(K)`,
@@ -434,7 +433,9 @@ ggbiplot(requirements_pca)
 
 ```{r Visualizacao1}
 # Selecionando apenas as colunas necessárias para geração do gráfico.
-skills <- select(data, Python, spark, aws, excel, sql, sas, keras, pytorch, scikit, tensor, hadoop, tableau, bi, flink, mongo, google_an)
+skills <- filter(data, `Avg Salary(K)` > median(data$`Avg Salary(K)`)) %>%
+  select(Python, spark, aws, excel, sql, sas, keras, pytorch, 
+         scikit, tensor, hadoop, tableau, bi, flink, mongo, google_an)
 
 # Criação de um novo dataframe
 sum_skills = data.frame()
@@ -448,7 +449,8 @@ colnames(sum_skills) = c('Occur', 'Skills')
 
 # Por fim, realiza a plotagem do gráfico.
 grafico_skills <- ggplot(data = sum_skills) + 
-  geom_bar(stat = "identity", position = position_dodge(), mapping = aes(x = as.factor(Skills), as.factor(Occur)))
+  geom_bar(stat = "identity", position = position_dodge(), 
+           mapping = aes(x = as.factor(Skills), as.factor(Occur)))
 grafico_skills
 ```
 ### Visualização do Rating Médio das empresas com base na sua receita obtida
@@ -467,4 +469,17 @@ grafico_rating_medio <- ggplot(data = conjunto_de_analise) +
 grafico_rating_medio
 
                                  
+```
+
+
+## Setores que oferecem melhor remuneração para os cientistas de dados que utilizam Python
+
+```{r Visualizacao3}
+# # Selecionando apenas as colunas necessárias para geração do gráfico.
+setores_e_salarios <- select(data, `Sector`,  `Avg Salary(K)`, `Python`)
+
+plot_ly(x = setores_e_salarios$Sector,
+        y = setores_e_salarios$`Avg Salary(K)`,
+        z = setores_e_salarios$Python,
+        type = "scatter3d")
 ```
