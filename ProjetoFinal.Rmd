@@ -31,18 +31,21 @@ data$`Salary Estimate` <- NULL
 # Transformação do atributo 'Size'
 #  - Ordenação manual e remoção do valor 'unknown'
 levels_size <- levels(factor(data$Size))
-data$Size <- as.numeric(factor(data$Size, levels = c(levels_size[1],
+data$Size <- factor(data$Size, levels = c(levels_size[1],
                                           levels_size[7],
                                           levels_size[4],
                                           levels_size[6],
                                           levels_size[3],
                                           levels_size[5],
-                                          levels_size[2])))
+                                          levels_size[2]))
+size_categorico <- data$Size
+
+data$Size <- as.numeric(data$Size,na.rm=FALSE)
 
 # Transformação do atributo 'Revenue'
 #  - Ordenação manual e remoção do valor 'unknown'
 levels_Revenue <- levels(factor(data$Revenue))
-data$Revenue <- as.numeric(factor(data$Revenue, levels = c(levels_Revenue[12],
+data$Revenue <- factor(data$Revenue, levels = c(levels_Revenue[12],
                                                 levels_Revenue[2],
                                                 levels_Revenue[9],
                                                 levels_Revenue[3],
@@ -53,7 +56,10 @@ data$Revenue <- as.numeric(factor(data$Revenue, levels = c(levels_Revenue[12],
                                                 levels_Revenue[1],
                                                 levels_Revenue[6],
                                                 levels_Revenue[8],
-                                                levels_Revenue[4])))
+                                                levels_Revenue[4]))
+revenue_categorico <- data$Revenue
+
+data$Revenue <- as.numeric(data$Revenue, na.rm = FALSE)
 
 ```
 
@@ -450,36 +456,113 @@ colnames(sum_skills) = c('Occur', 'Skills')
 # Por fim, realiza a plotagem do gráfico.
 grafico_skills <- ggplot(data = sum_skills) + 
   geom_bar(stat = "identity", position = position_dodge(), 
-           mapping = aes(x = as.factor(Skills), as.factor(Occur)))
+           mapping = aes(x = as.factor(Skills), as.factor(Occur)))+
+  labs(x = "Hard Skills", y = "Ocorrência de requisição", 
+    title = "Frequencia de requisição de Hard Skills em vagas bem remuneradas")+
+  scale_x_discrete(guide = guide_axis(n.dodge=2))+
+  theme_bw()
+
 grafico_skills
 ```
-### Visualização do Rating Médio das empresas com base na sua receita obtida
+
+### Visualização dos Níveis de Receita Médios Obtidos por cada Tipo de Empresa em Relação ao seu Rating
 
 ```{r Visualizacao2}
-# Selecionando apenas as colunas necessárias para geração do gráfico.
-visualizacao2 <- select(data, Rating, Revenue, `Type of ownership`)
 
+#Usando coluna de Revenue com strings preparada anteriormente
+data_with_string_revenue <- data
+data_with_string_revenue$Revenue <- revenue_categorico
+
+#Imputacao para os dados faltantes de Revenue, dessa vez com valores strings
+data_with_string_revenue <- kNN(data_with_string_revenue,imp_var = FALSE)
+
+#Selecao de dados
+visualizacao2 <- select(data_with_string_revenue, Rating, Revenue, `Type of ownership`)
+
+#Geracao do grafico, onde ha a inversao das coordenadas x e para que nao haja sobreposicao de legendas
 conjunto_de_analise <- visualizacao2 %>% dplyr::group_by(Revenue, `Type of ownership`) %>% dplyr::summarise("Rating Medio" = mean(Rating))
 
-grafico_rating_medio <- ggplot(data = conjunto_de_analise) +
-                        geom_bar(stat = "identity", position = position_dodge(), mapping = aes(x= as.factor(Revenue), y = `Rating Medio`, fill = `Type of ownership`)) +
-                        labs(x = "Receita das Empresas", title = "Rating Médio das empresas com base na sua receita Obtida")
 
+grafico_rating_medio <- ggplot(data = conjunto_de_analise) +
+                        geom_bar(stat = "identity", position = position_dodge(), mapping = aes(x= as.factor(Revenue), y = `Rating Medio`, fill = `Type of ownership`)) + 
+                        labs(x = "Receita das Empresas", title = "Níveis de Receita Médios obtidos por cada tipo de empresa em relação ao seu Rating") +
+                        coord_flip()
 
 grafico_rating_medio
+
+```
+### Visualização das Médias dos salários por cargo
+
+```{r Visualizacao3}
+
+#agrupa dados pelo título de vagas
+salarios_agrupados <- group_by(data,job_title_sim)
+
+#retira os espaços dos nomes dos atributos
+names(salarios_agrupados) <- make.names(names(salarios_agrupados), unique=TRUE)
+
+#captura a média dasestimativas médias para cada um dos cargos
+conjunto_analise <- summarise(salarios_agrupados, "Salario_Medio" = mean(Avg.Salary.K.)) 
+
+# cria um gráfico de barras com y sendo as médias e x os títulos das vagas
+grafico_salarios <- ggplot(data = conjunto_analise) + 
+                    geom_bar(stat = "identity", mapping = aes(x = job_title_sim, y = Salario_Medio)) +
+                    labs(x = "Título da vaga", y = "Média das estimativas médias de salário(em U$1000)") + 
+                    theme(axis.title = element_text(size=10), plot.title = element_text(size=12, face="bold")) +
+                    ggtitle("Médias dos Salários por Cargo") +
+                    coord_flip()
+
+grafico_salarios
+
+```
+
+### Visualização da Média do Salário Médio Distribuído entre os Setores
+
+```{r Visualizacao4}
+# Selecionando apenas as colunas necessárias para geração do gráfico.
+visualizacao4 <- select(data, `Avg Salary(K)`, `Sector`)
+
+conjunto_de_analise <- visualizacao3 %>% dplyr::group_by(Sector) %>% dplyr::summarise("Salário Médio (K)" = mean(`Avg Salary(K)`))
+
+grafico_salario_tamanho <- ggplot(data = conjunto_de_analise) +
+                        geom_bar(stat = "identity", position = position_dodge(), mapping = aes(x= as.factor(Sector), y = `Salário Médio (K)`)) +
+                        labs(x = "Setores", y = "Salário Médio (K)", title = "Salário Médio (K) Distríbuido entre os Setores") +
+                        coord_flip() 
+
+
+grafico_salario_tamanho
 
                                  
 ```
 
+### Influência do Índice de Avaliação e Idade da empresa no Salário Médio do Profissional em Ciência de Dados
 
-## Setores que oferecem melhor remuneração para os cientistas de dados que utilizam Python
-
-```{r Visualizacao3}
+```{r Visualizacao3D}
 # # Selecionando apenas as colunas necessárias para geração do gráfico.
-setores_e_salarios <- select(data, `Sector`,  `Avg Salary(K)`, `Python`)
+plot_ly(x = data$Age,
+        y = data$Rating, 
+        z = data$`Avg Salary(K)`,
+        type = "scatter3d") %>% layout(
+          scene = list(xaxis = list(title="Nota"),yaxis = list(title = "Idade"),
+          zaxis = list(title=("Salário Medio")))
+        )
+```
 
-plot_ly(x = setores_e_salarios$Sector,
-        y = setores_e_salarios$`Avg Salary(K)`,
-        z = setores_e_salarios$Python,
-        type = "scatter3d")
+```{r Visualizacao Hierarquica}
+
+#Definicao dos labels
+labels = c("company_text","Rating","Size","Revenue","Headquarters")
+
+#Definicao dos atributos "pai" de cada label na hierarquia
+parents=c("","company_text", "company_text","company_text","company_text")
+
+#plotagem do grafico
+fig <- plot_ly(
+type="sunburst",
+labels=labels,
+parents=parents,
+marker=list(colors=c("royalblue","lightblue","lightblue","lightblue","lightblue")),
+)
+
+fig
 ```
