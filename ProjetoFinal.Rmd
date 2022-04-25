@@ -216,8 +216,9 @@ print(paste("São redundantes e podem ser removidos: ", toString(redundantes)))
 #retirando redundantes 
 
 data$Founded <- NULL
-data$`Job Description`<-NULL
 
+data$`Job Description`<-NULL
+data$`Company Name` <- NULL
 data$company_txt <-NULL
 data$`Job Location`<- NULL
 data$`Job Title`<-NULL
@@ -318,7 +319,7 @@ print(paste("R Quadrado Para Imputação Constante (Moda): ",
 ## KNN
 data_amostragem$`Avg Salary(K) Amostrado`[positions] <- NA
 data_amostragem <- kNN(data_amostragem)
-data_amostragem <- select(data_amostragem, -c(34:66))
+data_amostragem <- select(data_amostragem, -c(33:64))
 
 print(paste("R Quadrado Para KNN: ",
             r_squared(obs = data_amostragem$`Avg Salary(K)`,
@@ -527,8 +528,7 @@ conjunto_de_analise <- visualizacao3 %>% dplyr::group_by(Sector) %>% dplyr::summ
 grafico_salario_tamanho <- ggplot(data = conjunto_de_analise) +
                         geom_bar(stat = "identity", position = position_dodge(), mapping = aes(x= as.factor(Sector), y = `Salário Médio (K)`)) +
                         labs(x = "Setores", y = "Salário Médio (K)", title = "Salário Médio (K) Distríbuido entre os Setores") +
-                        coord_flip() 
-
+                        coord_flip()
 
 grafico_salario_tamanho
 
