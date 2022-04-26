@@ -517,22 +517,39 @@ grafico_salarios
 
 ```
 
-### Visualização da Média do Salário Médio Distribuído entre os Setores
+## Setores que oferecem melhor remuneração aos cientistas de dados, segundo o uso de alguma tecnologia, no caso, AWS.
 
-```{r Visualizacao4}
-# Selecionando apenas as colunas necessárias para geração do gráfico.
-visualizacao4 <- select(data, `Avg Salary(K)`, `Sector`)
+```{r Visualizacao3}
+# Filtrando os dados necessárias para geração do gráfico.
+setores_salarios_aws <- select(data, `Sector`,  `Avg Salary(K)`, `aws`)
+setores_salarios_aws$aws[which(setores_salarios_aws$aws == 1)] <- "C/ AWS"
+setores_salarios_aws$aws[which(setores_salarios_aws$aws == 0)] <- "S/ AWS"
+setores_salarios_aws <- aggregate(`Avg Salary(K)` ~ `Sector` + `aws`, 
+                                 FUN = mean, 
+                                 data = setores_salarios_aws)
+setores_salarios_aws$`Avg Salary(K)` <- round(setores_salarios_aws$`Avg Salary(K)`)
 
-conjunto_de_analise <- visualizacao3 %>% dplyr::group_by(Sector) %>% dplyr::summarise("Salário Médio (K)" = mean(`Avg Salary(K)`))
+grafico_setores_salarios_aws <- ggplot(data = setores_salarios_aws) + 
+  geom_bar(stat = "identity", position = position_dodge(),
+           mapping = aes(x = as.factor(Sector), 
+                         y = as.factor(`Avg Salary(K)`),
+                         fill = Sector),
+           show.legend = F) +
+  labs(x = "Setores", y = "Médias salariais", 
+          title = "Médias salariais por setor com uso e não uso da tecnologia AWS") +
+  theme(axis.text.x = element_text(angle=60, vjust=1, hjust=1),
+        axis.text.y = element_text(vjust=1, hjust=1),
+        title = element_text(size = 10)) +
+  scale_x_discrete(guide = guide_axis(check.overlap = TRUE)) +
+  scale_y_discrete(guide = guide_axis(check.overlap = TRUE)) +
+  facet_wrap(vars(aws), nrow = 1, ncol = 2) +
+  coord_flip()
+grafico_setores_salarios_aws
+```
 
-grafico_salario_tamanho <- ggplot(data = conjunto_de_analise) +
-                        geom_bar(stat = "identity", position = position_dodge(), mapping = aes(x= as.factor(Sector), y = `Salário Médio (K)`)) +
-                        labs(x = "Setores", y = "Salário Médio (K)", title = "Salário Médio (K) Distríbuido entre os Setores") +
-                        coord_flip()
-
-grafico_salario_tamanho
-
-                                 
+```{r NothingMuch}
+print(paste0("Com AWS: ", sum(setores_salarios_aws$aws == "C/ AWS")))
+print(paste0("Sem AWS: ", sum(setores_salarios_aws$aws == "S/ AWS")))
 ```
 
 ### Influência do Índice de Avaliação e Idade da empresa no Salário Médio do Profissional em Ciência de Dados
